@@ -1,6 +1,6 @@
 section .text
  global _start
- extern malloc, free, sin, cos, memset
+ extern malloc, free, sin, cos, memset, printf
 
 section .data
  ; constants
@@ -13,6 +13,19 @@ section .data
  ; sizes for malloc calls
  z_size		dq 0x1b80
  b_size		dq 0x06e0
+ ; constants needed for floating point operations
+ fp_0_0		dq 0.0
+ fp_0_02	dq 0.02
+ fp_0_04	dq 0.04
+ fp_0_07	dq 0.07
+ fp_2_0		dq 2.0
+ fp_6_28	dq 6.28
+ fp_12_0	dq 12.0
+ fp_15_0	dq 15.0
+ fp_30_0	dq 30.0
+ fp_40_0	dq 40.0
+
+ format		db '%f', 10, 0 ; DEBUG
 
  ; variables
  ; ints
@@ -58,6 +71,11 @@ section .text
   jz _exit_malloc_b_fail
   mov [b], rax
 
+  ; initialize A and B (line 4)
+  mov rax, [fp_0_0]
+  mov [A], rax
+  mov [B], rax
+
   ; clear screen (line 6)
   call _screen_clear
 
@@ -65,13 +83,38 @@ section .text
   _loop_exec:
    ; initialize z and b (lines 8, 9)
    lea rdi, [z]			; init z
-   mov rax, 0
+   mov rax, [fp_0_0]
    mov rcx, [z_size]
    call memset
    lea rdi, [b]			; init b
    mov rax, ' '
    mov rcx, [b_size]
    call memset
+
+   ; for j loop (line 10)
+   mov rax, [fp_0_0]
+   mov [j], rax
+   _loop_j:
+    
+    ; DEBUG
+
+    movsd xmm0, qword [j]
+    mov rdi, format
+    mov rax, 1
+    call printf
+
+    ; END
+
+    ; increment j, compare to 6.28 and jump if less than (line 10)
+    fld qword [j]
+    fld qword [fp_0_07]
+    fadd
+    fstp qword [j]
+    fld qword [fp_6_28]
+    fld qword [j]
+    fcomip
+    fstp
+    jbe _loop_j
 
    ; jump to start of loop
    jmp _loop_exec
