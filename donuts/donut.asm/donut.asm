@@ -1,6 +1,6 @@
 section .text
  global _start
- extern malloc, free, sin, cos
+ extern malloc, free, sin, cos, memset
 
 section .data
  ; constants
@@ -58,6 +58,24 @@ section .text
   jz _exit_malloc_b_fail
   mov [b], rax
 
+  ; clear screen (line 6)
+  call _screen_clear
+
+  ; execution loop
+  _loop_exec:
+   ; initialize z and b (lines 8, 9)
+   lea rdi, [z]			; init z
+   mov rax, 0
+   mov rcx, [z_size]
+   call memset
+   lea rdi, [b]			; init b
+   mov rax, ' '
+   mov rcx, [b_size]
+   call memset
+
+   ; jump to start of loop
+   jmp _loop_exec
+
  ; exit with code 0 (success)
  _exit:
   ; free z and b
@@ -68,13 +86,13 @@ section .text
   ; exit
   mov rbx, 0
   mov rax, 1
-  syscall
+  int 0x80
  
  ; exit with code 1 (malloc z failed)
  _exit_malloc_z_fail:
   mov rbx, 1
   mov rax, 1
-  syscall
+  int 0x80
 
  ; exit with code 2 (malloc b failed)
  _exit_malloc_b_fail:
@@ -84,7 +102,7 @@ section .text
   ; exit
   mov rbx, 2
   mov rax, 1
-  syscall
+  int 0x80
  
  ; send signal to clear screen
  _screen_clear:
@@ -92,7 +110,7 @@ section .text
   mov rcx, msg_clear
   mov rbx, 1
   mov rax, 4
-  syscall
+  int 0x80
   ret
  
  ; send signal to go to top of screen
@@ -101,5 +119,5 @@ section .text
   mov rcx, msg_top
   mov rbx, 1
   mov rax, 4
-  syscall
+  int 0x80
   ret
