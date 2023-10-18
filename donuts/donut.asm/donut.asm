@@ -14,7 +14,7 @@ section .data
  char_array	db '.,-~:;=!*#$@'
  ; sizes for malloc calls
  z_size		dq 0x1b80
- b_size		dq 0x06e0
+ b_size		dq 1760
  ; constants needed for floating point operations
  fp_0_0		dq 0.0
  fp_0_02	dq 0.02
@@ -57,22 +57,24 @@ section .data
  z		dq 0
  b		dq 0
 
+ db_f		db '%li', 10, 0
+
 section .text
  ; start of the program
  _start:
   ; malloc z
   mov rdi, [z_size]
   call malloc
+  mov [z], rax
   test rax, rax			; test for success
   jz _exit_malloc_z_fail
-  mov [z], rax
 
   ; malloc b
   mov rdi, [b_size]
   call malloc
+  mov [b], rax
   test rax, rax			; test for success
   jz _exit_malloc_b_fail
-  mov [b], rax
 
   ; initialize A and B (line 4)
   mov rax, [fp_0_0]
@@ -85,13 +87,13 @@ section .text
   ; execution loop
   _loop_exec:
    ; initialize z and b (lines 8, 9)
-   lea rdi, [z]			; init z
-   mov rax, [fp_0_0]
-   mov rcx, [z_size]
+   mov rdi, [z]			; init z
+   mov rsi, [fp_0_0]
+   mov rdx, [z_size]
    call memset
-   lea rdi, [b]			; init b
-   mov rax, ' '
-   mov rcx, [b_size]
+   mov rdi, [b]			; init b
+   mov rsi, ' '
+   mov rdx, [b_size]
    call memset
 
    ; for j loop (line 10)
@@ -153,7 +155,7 @@ section .text
      fld qword [sinj]
      fld qword [sinA]
      fmul
-     fsubr ; might be fsub
+     fsub ; might be fsub
      fstp qword [t]
      fld qword [cosi]		; x = 40 + 30 * mess * (cosi*cosj2*cosB - t*sinB) (line 23)
      fld qword [cosj2]
@@ -163,7 +165,7 @@ section .text
      fld qword [t]
      fld qword [sinB]
      fmul
-     fsubr ; might be fsub
+     fsub ; might be fsub
      fld qword [mess]
      fmul
      fld qword [fp_30_0]
@@ -200,7 +202,7 @@ section .text
      fmul
      fld qword [cosA]
      fmul
-     fsubr ; might be fsub
+     fsub ; might be fsub
      fld qword [cosB]
      fmul
      fld qword [sini]
@@ -208,20 +210,29 @@ section .text
      fmul
      fld qword [sinA]
      fmul
-     fsubr ; might be fsub
+     fsub ; might be fsub
      fld qword [sinj]
      fld qword [cosA]
      fmul
-     fsubr ; might be fsub
+     fsub ; might be fsub
      fld qword [cosi]
      fld qword [cosj]
      fmul
      fld qword [sinB]
      fmul
-     fsubr ; might be fsub
+     fsub ; might be fsub
      fld qword [fp_8_0]
      fmul
      fistp qword [N]
+
+     ;DEBUG
+     mov rdi, db_f
+     mov rsi, [o]
+     mov rax, 1
+     call printf
+     ;END DEBUG
+
+
 
      mov rax, 22		; if thing (line 27)
      mov rbx, [y]
@@ -249,6 +260,12 @@ section .text
      fstp
      jle _if_end
 
+     ;mov rax, [o]
+     ;cmp rax, 0
+     ;jle _if_end
+     ;cmp rax, 1750
+     ;jg _if_end
+
      mov rax, [z]		; z[o] = mess (line 28)
      mov rbx, [o]
      imul rbx, 8
@@ -256,7 +273,7 @@ section .text
      mov rbx, [mess]
      mov [rax], rbx
 
-     mov rax, [b]		; b[o] = ".,-~:;=!*#$@"[N > 0 ? N : 0]
+     mov rax, [b]		; b[o] = ".,-~:;=!*#$@"[N > 0 ? N : 0] (line 29)
      add rax, [o]
      mov rbx, [N]
      cmp rbx, 0
@@ -303,28 +320,33 @@ section .text
     mov rax, rdx
     cmp rax, 0
     je _add_nl
-    mov rax, [k]
-    add rax, [b]
+    mov rax, [b]
+    add rax, [k]
     mov rdi, [rax]
+    mov rax, 1
+    call putchar
     jmp _loop_k_end
     _add_nl:
-    mov rdi, '\n'
+    mov rdi, 0xa
+    mov rax, 1
     call putchar
 
     _loop_k_end:
     ; increment k and jump if less than 1761 (line 34)
     mov rax, [k]
-    inc rax
+    add rax, 1
     mov [k], rax
     cmp rax, 1761
     jl _loop_k
 
+   _loop_exec_end:
    ; jump to start of loop
+   jmp _exit ; DEBUG
    jmp _loop_exec
 
  ; exit with code 0 (success)
  _exit:
-  ; free z and b
+  ;free z and b
   mov rdi, [z]
   call free
   mov rdi, [b]
