@@ -1,1 +1,3 @@
 tools/donut_generator
+donuts/donut.asm/donut
+donuts/donut.asm/donut.o
