@@ -13,10 +13,12 @@ section .data
  ; character array
  char_array	db '.,-~:;=!*#$@'
  ; sizes for malloc calls
- z_size		dq 0x1b80
+ z_size		dq 14080
  b_size		dq 1760
  ; constants needed for floating point operations
  fp_0_0		dq 0.0
+ fp_0_002	dq 0.002
+ fp_0_004	dq 0.004
  fp_0_02	dq 0.02
  fp_0_04	dq 0.04
  fp_0_07	dq 0.07
@@ -57,7 +59,7 @@ section .data
  z		dq 0
  b		dq 0
 
- db_f		db '%li', 10, 0
+ db_f		db 'x: %i y: %i mess: %f z[o]: %f', 10, 0
 
 section .text
  ; start of the program
@@ -136,7 +138,7 @@ section .text
      fld qword [fp_5_0]
      fadd
      fld qword [fp_1_0]
-     fdiv ; might be fdivr
+     fdivr ; might be fdivr
      fstp qword [mess]
      movsd xmm0, qword [i]	; cosi = cos(i) (line 19)
      call cos
@@ -188,7 +190,8 @@ section .text
      fmul
      fld qword [fp_12_0]
      fadd
-     mov rax, [y]		; o = x + 80*y (ine 25)
+     fistp qword [y]
+     mov rax, [y]		; o = x + 80*y (line 25)
      mov rbx, 80
      imul rax, rbx
      mov rbx, [x]
@@ -225,15 +228,6 @@ section .text
      fmul
      fistp qword [N]
 
-     ;DEBUG
-     mov rdi, db_f
-     mov rsi, [o]
-     mov rax, 1
-     call printf
-     ;END DEBUG
-
-
-
      mov rax, 22		; if thing (line 27)
      mov rbx, [y]
      cmp rax, rbx
@@ -260,11 +254,19 @@ section .text
      fstp
      jle _if_end
 
-     ;mov rax, [o]
-     ;cmp rax, 0
-     ;jle _if_end
-     ;cmp rax, 1750
-     ;jg _if_end
+     ;;DEBUG
+     ;mov rdi, db_f
+     ;mov rsi, [x]
+     ;mov rdx, [y]
+     ;movsd xmm0, qword [mess]
+     ; mov rax, [z]
+     ; mov rbx, [o]
+     ; imul rbx, 8
+     ; add rax, rbx
+     ;movsd xmm1, qword [rax]
+     ;mov rax, 1
+     ;call printf
+     ;;END DEBUG
 
      mov rax, [z]		; z[o] = mess (line 28)
      mov rbx, [o]
@@ -277,7 +279,7 @@ section .text
      add rax, [o]
      mov rbx, [N]
      cmp rbx, 0
-     jle _swap_end
+     jg _swap_end
      mov rbx, 0
      _swap_end:
      add rbx, char_array
@@ -320,12 +322,14 @@ section .text
     mov rax, rdx
     cmp rax, 0
     je _add_nl
+
     mov rax, [b]
     add rax, [k]
     mov rdi, [rax]
     mov rax, 1
     call putchar
     jmp _loop_k_end
+
     _add_nl:
     mov rdi, 0xa
     mov rax, 1
@@ -341,7 +345,15 @@ section .text
 
    _loop_exec_end:
    ; jump to start of loop
-   jmp _exit ; DEBUG
+   ;jmp _exit ; DEBUG
+   fld qword [A]
+   fld qword [fp_0_004];
+   fadd
+   fstp qword [A]
+   fld qword [B]
+   fld qword [fp_0_002];
+   fadd
+   fstp qword [B]
    jmp _loop_exec
 
  ; exit with code 0 (success)
