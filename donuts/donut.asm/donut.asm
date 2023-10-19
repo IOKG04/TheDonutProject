@@ -59,7 +59,7 @@ section .data
  z		dq 0
  b		dq 0
 
- db_f		db 'x: %i y: %i mess: %f z[o]: %f', 10, 0
+ db_f		db 'mess: %f z[o]: %f', 10, 0
 
 section .text
  ; start of the program
@@ -227,6 +227,9 @@ section .text
      fld qword [fp_8_0]
      fmul
      fistp qword [N]
+     ;mov rax, [N]
+     ;imul rax, 8
+     ;mov [N], rax
 
      mov rax, 22		; if thing (line 27)
      mov rbx, [y]
@@ -244,29 +247,15 @@ section .text
      mov rbx, [x]
      cmp rax, rbx
      jle _if_end
-     fld qword [mess]
      mov rax, [z]
      mov rbx, [o]
      imul rbx, 8
      add rax, rbx
      fld qword [rax]
+     fld qword [mess]
      fcomip
      fstp
-     jle _if_end
-
-     ;;DEBUG
-     ;mov rdi, db_f
-     ;mov rsi, [x]
-     ;mov rdx, [y]
-     ;movsd xmm0, qword [mess]
-     ; mov rax, [z]
-     ; mov rbx, [o]
-     ; imul rbx, 8
-     ; add rax, rbx
-     ;movsd xmm1, qword [rax]
-     ;mov rax, 1
-     ;call printf
-     ;;END DEBUG
+     jbe _if_end
 
      mov rax, [z]		; z[o] = mess (line 28)
      mov rbx, [o]
