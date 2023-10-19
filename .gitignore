@@ -3,3 +3,5 @@ donuts/donut.asm/donut
 donuts/donut.asm/donut.o
 donuts/donut.asm/donut.asm_bckup
 donuts/donut.asm/debug.txt
+donuts/donut
+donuts/donut.o
