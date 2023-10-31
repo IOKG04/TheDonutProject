@@ -22,12 +22,20 @@ x = checked / done
  [ ] Configurations
   [ ] Modular group and formular system
   [ ] (Usable) configuration file format
- [ ] Output file
+ [x] Output file
  [ ] More Logs
  [ ] Disable standard output
+ [ ] Disable questions
+ [ ] Help message
 [ ] Add error messages where applicable
 
 Errors marked with `(I)` are internal. Please open an issue and describe what exactly you did to cause the error.
+
+Arguments:
+ `_o [file]` `_out [file]` `_output [file]`	Saves donut to [file]
+ `_o! [file]` `_out! [file]` `_output! [file]`	Saves donut to [file], doesnt ask for permission to overwrite
+
+`_` is used for flags instead of `-`, so there are no conflics with the dotnet cli
 
 */
 
@@ -38,13 +46,25 @@ public class Program{
     public static int		totalCharCount;
     public static string[]	donutTemplate;
     public static string	outp;
+    public static string?	outpFile;
 
     public static int Main(string[] args){
+	// error on not enough arguments
 	if(args.Length < 1){
 	    Console.WriteLine("Error 4: Not enough arguments");
 	    throw new Exception("Error 4: Not enough arguments");
 	}
+	// error on nonexistent input file
+	if(!File.Exists(args[0])){
+	    Console.WriteLine("Error 5: Input file doesnt exist");
+	    throw new Exception("Error 5: Input file doesnt exist");
+	}
 
+	// interpret flags and exit if exit is requested
+	int f = InterpretFlags(args);
+	if(f != 0) return f;
+
+	// read baseCode
 	string baseCode = File.ReadAllText(args[0]);
 	
 	// filter baseCode
@@ -61,10 +81,10 @@ public class Program{
 	// get donut template
 _generate_donut:
 	donutTemplate = GenerateDonut();
-	// throw error on non-existant donutTemplate
+	// throw error on nonexistent donutTemplate
 	if(donutTemplate.Length < 1){
-	    Console.WriteLine("Error 3 (I): donutTemplate non-existant");
-	    throw new Exception("Error 3 (I): donutTemplate non-existant");
+	    Console.WriteLine("Error 3 (I): donutTemplate nonexistent");
+	    throw new Exception("Error 3 (I): donutTemplate nonexistent");
 	}
 
 	// map tokens onto donut
@@ -132,7 +152,9 @@ _generate_donut:
 	    }
 	}
 
+	// output donut
 	Console.WriteLine(outp);
+	if(outpFile != null) File.WriteAllText(outpFile, outp);
 
 	return 0;
     }
@@ -169,6 +191,39 @@ _generate_donut:
 	    else if(c != 0) return c;
 	}
 	return c;
+    }
+    private static int InterpretFlags(string[] args){
+	int flagIndex;
+	outpFile = null;
+
+	// `_o [file]` flag
+	if((flagIndex = Array.IndexOf(args, "_o")) != -1 || (flagIndex = Array.IndexOf(args, "_out")) != -1 || (flagIndex = Array.IndexOf(args, "_output")) != -1){
+	    // error on nonexistent [file]
+	    if(args.Length <= flagIndex + 1){
+	        Console.WriteLine("Error 6: No file after `_o` flag");
+	        throw new Exception("Error 6: No file after `_o` flag");
+	    }
+	    // test if [file] exists
+	    if(File.Exists(args[flagIndex + 1])){
+	        Console.WriteLine("Output file `" + args[flagIndex + 1] + "` already exists\nOverwrite? Y/n");
+	        string inp = Console.ReadLine().ToLower();
+	        if(inp == "n" || inp == "no" || inp == "0"){
+	    	Console.WriteLine("Exit 1: Output file exists and should not be overwritten");
+	    	return 1;
+	        }
+	    }
+	    outpFile = args[flagIndex + 1];
+	}
+	// `_o! [file]` flag
+	if((flagIndex = Array.IndexOf(args, "_o!")) != -1 || (flagIndex = Array.IndexOf(args, "_out!")) != -1 || (flagIndex = Array.IndexOf(args, "_output!")) != -1){
+	    // error on nonexistent [file]
+	    if(args.Length <= flagIndex + 1){
+	        Console.WriteLine("Error 6: No file after `_o` flag");
+	        throw new Exception("Error 6: No file after `_o` flag");
+	    }
+	    outpFile = args[flagIndex + 1];
+	}
+	return 0;
     }
 }
 
