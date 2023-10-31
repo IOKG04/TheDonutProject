@@ -25,7 +25,7 @@ x = checked / done
  [x] Output file
  [ ] More Logs
  [ ] Disable standard output
- [ ] Disable questions
+ [x] Disable questions
  [ ] Help message
 [ ] Add error messages where applicable
 
@@ -34,6 +34,7 @@ Errors marked with `(I)` are internal. Please open an issue and describe what ex
 Arguments:
  `_o [file]` `_out [file]` `_output [file]`	Saves donut to [file]
  `_o! [file]` `_out! [file]` `_output! [file]`	Saves donut to [file], doesnt ask for permission to overwrite
+ `_y` `_yes` `_!`				Automatically answeres yes to any question
 
 `_` is used for flags instead of `-`, so there are no conflics with the dotnet cli
 
@@ -195,6 +196,12 @@ _generate_donut:
     private static int InterpretFlags(string[] args){
 	int flagIndex;
 	outpFile = null;
+	bool autoYes = false;
+
+	// `_y` flag
+	if(Array.IndexOf(args, "_y") != -1 || Array.IndexOf(args, "_yes") != -1 || Array.IndexOf(args, "_!") != -1){
+	    autoYes = true;
+	}
 
 	// `_o [file]` flag
 	if((flagIndex = Array.IndexOf(args, "_o")) != -1 || (flagIndex = Array.IndexOf(args, "_out")) != -1 || (flagIndex = Array.IndexOf(args, "_output")) != -1){
@@ -204,7 +211,7 @@ _generate_donut:
 	        throw new Exception("Error 6: No file after `_o` flag");
 	    }
 	    // test if [file] exists
-	    if(File.Exists(args[flagIndex + 1])){
+	    if(!autoYes && File.Exists(args[flagIndex + 1])){
 	        Console.WriteLine("Output file `" + args[flagIndex + 1] + "` already exists\nOverwrite? Y/n");
 	        string inp = Console.ReadLine().ToLower();
 	        if(inp == "n" || inp == "no" || inp == "0"){
