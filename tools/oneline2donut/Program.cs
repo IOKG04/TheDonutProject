@@ -24,7 +24,7 @@ x = checked / done
   [ ] (Usable) configuration file format
  [x] Output file
  [ ] More Logs
- [ ] Disable standard output
+ [x] Disable standard output
  [x] Disable questions
  [ ] Help message
 [ ] Add error messages where applicable
@@ -35,6 +35,7 @@ Arguments:
  `_o [file]` `_out [file]` `_output [file]`	Saves donut to [file]
  `_o! [file]` `_out! [file]` `_output! [file]`	Saves donut to [file], doesnt ask for permission to overwrite
  `_y` `_yes` `_!`				Automatically answeres yes to any question
+ `_s` `_silent`					Doesnt print donut to standard output
 
 `_` is used for flags instead of `-`, so there are no conflics with the dotnet cli
 
@@ -47,7 +48,9 @@ public class Program{
     public static int		totalCharCount;
     public static string[]	donutTemplate;
     public static string	outp;
+
     public static string?	outpFile;
+    public static bool		printDonut;
 
     public static int Main(string[] args){
 	// error on not enough arguments
@@ -154,7 +157,7 @@ _generate_donut:
 	}
 
 	// output donut
-	Console.WriteLine(outp);
+	if(printDonut) Console.WriteLine(outp);
 	if(outpFile != null) File.WriteAllText(outpFile, outp);
 
 	return 0;
@@ -196,12 +199,11 @@ _generate_donut:
     private static int InterpretFlags(string[] args){
 	int flagIndex;
 	outpFile = null;
+	printDonut = true;
 	bool autoYes = false;
 
 	// `_y` flag
-	if(Array.IndexOf(args, "_y") != -1 || Array.IndexOf(args, "_yes") != -1 || Array.IndexOf(args, "_!") != -1){
-	    autoYes = true;
-	}
+	if(Array.IndexOf(args, "_y") != -1 || Array.IndexOf(args, "_yes") != -1 || Array.IndexOf(args, "_!") != -1) autoYes = true;
 
 	// `_o [file]` flag
 	if((flagIndex = Array.IndexOf(args, "_o")) != -1 || (flagIndex = Array.IndexOf(args, "_out")) != -1 || (flagIndex = Array.IndexOf(args, "_output")) != -1){
@@ -230,6 +232,17 @@ _generate_donut:
 	    }
 	    outpFile = args[flagIndex + 1];
 	}
+
+	// `_s` flag
+	if(Array.IndexOf(args, "_s") != -1 || Array.IndexOf(args, "_silent") != -1){
+	    printDonut = false;
+	    if(!autoYes && outpFile == null){
+		Console.WriteLine("No output will be generated.\nAre you sure you want to keep all output disabled? y/N");
+		string inp = Console.ReadLine().ToLower();
+		if(!(inp == "y" || inp == "yes" || inp == "1")) printDonut = true;
+	    }
+	}
+
 	return 0;
     }
 }
