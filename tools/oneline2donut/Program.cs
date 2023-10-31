@@ -5,8 +5,9 @@ using System.Linq;
 
 /*
 
-c = coded
+w = working on
 r = reworking
+c = coded
 x = checked / done
 
 [x] Parse
@@ -18,7 +19,12 @@ x = checked / done
  [x] Generate donut template
  [x] Map input onto template without splitting groups
 [ ] Add arguments
- [ ] Defineable groups
+ [ ] Configurations
+  [ ] Modular group and formular system
+  [ ] (Usable) configuration file format
+ [ ] Output file
+ [ ] More Logs
+ [ ] Disable standard output
 [ ] Add error messages where applicable
 
 Errors marked with `(I)` are internal. Please open an issue and describe what exactly you did to cause the error.
