@@ -87,6 +87,11 @@ Its output will consist of the donut and the amount of characters it contains.
 Character count: 300
 ```
 
+
+#### Logs
+
+Any donut generated will be added to `donutGenerator.log`, so it is recoverable even if the dimensions used to generate it are lost.
+
 ### `donutGenerator` errors
 
 #### Error 0: Not enough or too many arguments
