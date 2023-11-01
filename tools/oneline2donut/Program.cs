@@ -22,10 +22,11 @@ x = checked / done
  [ ] Configurations
   [ ] Modular group and formular system
   [ ] (Usable) configuration file format
- [x] Output file
- [ ] More Logs
- [x] Disable standard output
- [x] Disable questions
+ [x] Output file (_o, _o!)
+ [x] More Logs (_l)
+ [ ] Even more logs
+ [x] Disable standard output (_s)
+ [x] Disable questions (_y)
  [ ] Help message
 [ ] Add error messages where applicable
 
@@ -36,6 +37,7 @@ Arguments:
  `_o! [file]` `_out! [file]` `_output! [file]`	Saves donut to [file], doesnt ask for permission to overwrite
  `_y` `_yes` `_!`				Automatically answeres yes to any question
  `_s` `_silent`					Doesnt print donut to standard output
+ `_l` `_loud`					Prints extra information
 
 `_` is used for flags instead of `-`, so there are no conflics with the dotnet cli
 
@@ -50,7 +52,7 @@ public class Program{
     public static string	outp;
 
     public static string?	outpFile;
-    public static bool		printDonut;
+    public static bool		printDonut, printDebug;
 
     public static int Main(string[] args){
 	// error on not enough arguments
@@ -67,29 +69,38 @@ public class Program{
 	// interpret flags and exit if exit is requested
 	int f = InterpretFlags(args);
 	if(f != 0) return f;
+	if(printDebug) Console.WriteLine("Finished interpreting flags\nStarting loading file");
 
 	// read baseCode
 	string baseCode = File.ReadAllText(args[0]);
+	if(printDebug) Console.WriteLine("Finished loading file\nStarting filtering file");
 	
 	// filter baseCode
 	baseCode = baseCode.Replace("\n", " ");
 	baseCode = baseCode.Replace("\t", " ");
 	while(baseCode.Contains("  ")) baseCode = baseCode.Replace("  ", " ");
 	while(baseCode.EndsWith(' ')) baseCode = baseCode.Remove(baseCode.Length - 1);
+	totalCharCount = baseCode.Length;
+	if(printDebug) Console.WriteLine("Finished filtering file\nStarting finding primitives");
 
 	// parse baseCode
 	tokens = Token.FindPrimitives(baseCode);
+	if(printDebug) Console.WriteLine("Finished finding primitives: " + tokens.Count + "\nStarting parsing strings");
 	Token.ParseStrings(ref tokens);
+	if(printDebug) Console.WriteLine("Finished parsing strings\nStarting applying formulars");
 	Token.ApplyFormulars(ref tokens);
+	if(printDebug) Console.WriteLine("Finished applying formulars: " + tokens.Count);
 
 	// get donut template
 _generate_donut:
+	if(printDebug) Console.WriteLine("Starting generating donut with " + totalCharCount + " chars");
 	donutTemplate = GenerateDonut();
 	// throw error on nonexistent donutTemplate
 	if(donutTemplate.Length < 1){
 	    Console.WriteLine("Error 3 (I): donutTemplate nonexistent");
 	    throw new Exception("Error 3 (I): donutTemplate nonexistent");
 	}
+	if(printDebug) Console.WriteLine("Finished generating donut\nStarting mapping onto donut");
 
 	// map tokens onto donut
 	int currentChar = 0, currentRow = 0, currentToken = 0, startToken, dotsLeft;
@@ -103,6 +114,7 @@ _generate_donut:
 		// retry with bigger donut on donutTemplate being too small
 		if(currentRow >= donutTemplate.Length){
 		    totalCharCount += 100;
+		    if(printDebug) Console.WriteLine("Generated donut was too small for mapping, restarting");
 		    goto _generate_donut;
 		}
 	    }
@@ -155,6 +167,7 @@ _generate_donut:
 		outp += '\n';
 	    }
 	}
+	if(printDebug) Console.WriteLine("Finished mapping onto donut");
 
 	// output donut
 	if(printDonut) Console.WriteLine(outp);
@@ -200,6 +213,7 @@ _generate_donut:
 	int flagIndex;
 	outpFile = null;
 	printDonut = true;
+	printDebug = false;
 	bool autoYes = false;
 
 	// `_y` flag
@@ -242,6 +256,9 @@ _generate_donut:
 		if(!(inp == "y" || inp == "yes" || inp == "1")) printDonut = true;
 	    }
 	}
+
+	// `_l` flag
+	if(Array.IndexOf(args, "_l") != -1 || Array.IndexOf(args, "_loud") != -1) printDebug = true;
 
 	return 0;
     }
