@@ -48,3 +48,12 @@ for y in range(outside_r):
     print()
 
 print(f"\nCharacter count: {character_amount}")
+
+# append generated donut to log
+with open("donutGenerator.log", 'a') as dgl:
+    dgl.write(f"Outer radius: {outside_r}, inner radius: {inside_r}, character count: {character_amount}")
+    for y in range(outside_r):
+        for x in range(outside_r * 2):
+            dgl.write(buffer[x + y * 2 * outside_r])
+        dgl.write("\n")
+    dgl.write("\n");
