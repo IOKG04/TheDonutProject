@@ -28,7 +28,7 @@ x = tested / done
  [x] Disable questions (_y)
  [x] Help message (_h)
  [ ] Skip lines (dont map code onto first n lines of donut to leave space for stuff)
- [ ] Print donut size information
+ [c] Print donut size information (_i)
  [ ] Specify specific donut size
 [ ] Add error messages where applicable
 
@@ -49,6 +49,7 @@ public static class Config{
 	 _o [file_out] _out [file_out] _output [file_out]	Saves the generated donut to [file_out].
 	 _s _silent						The generated donut isnt printed to the screen.
 	 _l _loud						Prints extra/debug information.
+	 _i _di _info _donutinfo				Appends dimensions of the generated donut to the donut.
 	 _y _yes _!						Automatically answered Yes to any questions.
 	 _h _help						Prints a help message, then exits.
 	
@@ -88,6 +89,9 @@ public static class Config{
 	// assume unsplittable others
 	(new TokenGroup[] {TokenGroup.other, TokenGroup.other}, TokenGroup.other),		// others can be extended by others
     };
+
+    public static int donutIR, donutOR, donutCC;
+    public static bool printDonut, printDebug, printDonutInfo;
 }
 
 public class Program{
@@ -97,7 +101,6 @@ public class Program{
     public static string	outp;
 
     public static string?	outpFile;
-    public static bool		printDonut, printDebug;
 
     public static int Main(string[] args){
 	// error on not enough arguments
@@ -120,11 +123,11 @@ public class Program{
 	// interpret flags and exit if exit is requested
 	int f = InterpretFlags(args);
 	if(f != 0) return f;
-	if(printDebug) Console.WriteLine("Finished interpreting flags\nStarting loading file");
+	if(Config.printDebug) Console.WriteLine("Finished interpreting flags\nStarting loading file");
 
 	// read baseCode
 	string baseCode = File.ReadAllText(args[0]);
-	if(printDebug) Console.WriteLine("Finished loading file\nStarting filtering file");
+	if(Config.printDebug) Console.WriteLine("Finished loading file\nStarting filtering file");
 	
 	// filter baseCode
 	baseCode = baseCode.Replace("\n", " ");
@@ -132,26 +135,26 @@ public class Program{
 	while(baseCode.Contains("  ")) baseCode = baseCode.Replace("  ", " ");
 	while(baseCode.EndsWith(' ')) baseCode = baseCode.Remove(baseCode.Length - 1);
 	totalCharCount = baseCode.Length;
-	if(printDebug) Console.WriteLine("Finished filtering file\nStarting finding primitives");
+	if(Config.printDebug) Console.WriteLine("Finished filtering file\nStarting finding primitives");
 
 	// parse baseCode
 	tokens = Token.FindPrimitives(baseCode);
-	if(printDebug) Console.WriteLine("Finished finding primitives: " + tokens.Count + "\nStarting parsing strings");
+	if(Config.printDebug) Console.WriteLine("Finished finding primitives: " + tokens.Count + "\nStarting parsing strings");
 	Token.ParseStrings(ref tokens);
-	if(printDebug) Console.WriteLine("Finished parsing strings\nStarting applying formulars");
+	if(Config.printDebug) Console.WriteLine("Finished parsing strings\nStarting applying formulars");
 	Token.ApplyFormulars(ref tokens);
-	if(printDebug) Console.WriteLine("Finished applying formulars: " + tokens.Count);
+	if(Config.printDebug) Console.WriteLine("Finished applying formulars: " + tokens.Count);
 
 	// get donut template
 _generate_donut:
-	if(printDebug) Console.WriteLine("Starting generating donut with " + totalCharCount + " chars");
+	if(Config.printDebug) Console.WriteLine("Starting generating donut with " + totalCharCount + " chars");
 	donutTemplate = GenerateDonut();
 	// throw error on nonexistent donutTemplate
 	if(donutTemplate.Length < 1){
 	    Console.WriteLine("Error 3 (I): donutTemplate nonexistent");
 	    throw new Exception("Error 3 (I): donutTemplate nonexistent");
 	}
-	if(printDebug) Console.WriteLine("Finished generating donut\nStarting mapping onto donut");
+	if(Config.printDebug) Console.WriteLine("Finished generating donut\nStarting mapping onto donut");
 
 	// map tokens onto donut
 	int currentChar = 0, currentRow = 0, currentToken = 0, startToken, dotsLeft;
@@ -168,7 +171,7 @@ _generate_donut:
 		    int unmappedCharacterAmount = 1;
 		    for(int i = currentToken; i < tokens.Count; i++) unmappedCharacterAmount += tokens[i].content.Length;
 		    totalCharCount += unmappedCharacterAmount;
-		    if(printDebug) Console.WriteLine("Generated donut was too small for mapping, restarting");
+		    if(Config.printDebug) Console.WriteLine("Generated donut was too small for mapping, restarting");
 		    goto _generate_donut;
 		}
 	    }
@@ -221,11 +224,15 @@ _generate_donut:
 		outp += '\n';
 	    }
 	}
-	if(printDebug) Console.WriteLine("Finished mapping onto donut");
+	if(Config.printDebug) Console.WriteLine("Finished mapping onto donut\nStarting I/O processes");
+
+	// print donut info
+	if(Config.printDonutInfo) outp += "\nInner radius: " + Config.donutIR + "\tOuter radius: " + Config.donutOR + "\tCharacter count: " + Config.donutCC;
 
 	// output donut
-	if(printDonut) Console.WriteLine(outp);
+	if(Config.printDonut) Console.WriteLine(outp);
 	if(outpFile != null) File.WriteAllText(outpFile, outp);
+	if(Config.printDebug) Console.WriteLine("Finished I/O processes");
 
 	return 0;
     }
@@ -251,7 +258,13 @@ _generate_donut:
 		}
 	    }
 	    a += 0.5f; // increase additional size in case generated donut has less characters than totalCharCount
+
+	    // update config information
+	    Config.donutOR = outsideR;
+	    Config.donutIR = insideR;
+	    Config.donutCC = c;
 	} while(c < totalCharCount); // make sure enough characters exist
+
 
 	return outp;
     }
@@ -266,8 +279,9 @@ _generate_donut:
     private static int InterpretFlags(string[] args){
 	int flagIndex;
 	outpFile = null;
-	printDonut = true;
-	printDebug = false;
+	Config.printDonut = true;
+	Config.printDebug = false;
+	Config.printDonutInfo = false;
 	bool autoYes = false;
 
 	// `_y` flag
@@ -294,16 +308,19 @@ _generate_donut:
 
 	// `_s` flag
 	if(Array.IndexOf(args, "_s") != -1 || Array.IndexOf(args, "_silent") != -1){
-	    printDonut = false;
+	    Config.printDonut = false;
 	    if(!autoYes && outpFile == null){
 		Console.WriteLine("No output will be generated.\nAre you sure you want to keep all output disabled? y/N");
 		string inp = Console.ReadLine().ToLower();
-		if(!(inp == "y" || inp == "yes" || inp == "1")) printDonut = true;
+		if(!(inp == "y" || inp == "yes" || inp == "1")) Config.printDonut = true;
 	    }
 	}
 
 	// `_l` flag
-	if(Array.IndexOf(args, "_l") != -1 || Array.IndexOf(args, "_loud") != -1) printDebug = true;
+	if(Array.IndexOf(args, "_l") != -1 || Array.IndexOf(args, "_loud") != -1) Config.printDebug = true;
+
+	// `_i` flag
+	if(Array.IndexOf(args, "_i") != -1 || Array.IndexOf(args, "_info") != -1 || Array.IndexOf(args, "_di") != -1 || Array.IndexOf(args, "_donutinfo") != -1) Config.printDonutInfo = true;
 
 	return 0;
     }
