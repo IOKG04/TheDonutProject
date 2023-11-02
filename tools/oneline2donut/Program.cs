@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 /*
-
 w = working on
 r = reworking
 c = coded / testing
@@ -29,6 +28,8 @@ x = tested / done
  [x] Disable questions (_y)
  [x] Help message (_h)
  [ ] Skip lines (dont map code onto first n lines of donut to leave space for stuff)
+ [ ] Print donut size information
+ [ ] Specify specific donut size
 [ ] Add error messages where applicable
 
 Errors marked with `(I)` are internal. Please open an issue and describe what exactly you did to cause the error.
@@ -37,6 +38,7 @@ Errors marked with `(I)` are internal. Please open an issue and describe what ex
 namespace oneline2donut;
 
 public static class Config{
+    // help message printed on error 4 or when _h flag is given
     public static string helpMessage = """
 	The "donutifier" automatically maps code onto a donut.
 
@@ -53,6 +55,39 @@ public static class Config{
 	All options start with _ instead of - as to not run into problems with dotnet.
 	If a flag is used multiple times, only the first instance will effect the result.
 	""";
+
+    // all strings which match a specific primitive group
+    // has to be in same order as PrimitiveGroup enum and in order of first to be checked to last
+    // if nothing matches TokenGroup.Other is given
+    public static string[][] primitiveGroupMatches = new string[][]{
+	new string[] {" ", "\t", "\n"},
+	new string[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"},
+	new string[] {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
+	new string[] {"."},
+	new string[] {";", ","},
+	new string[] {"(", ")", "[", "]", "{", "}"},
+	new string[] {"\"\"\"", "'''", "\"", "'", "`"},
+	new string[] {"\\"},
+	new string[] {"_"},
+    };
+    // all combinations of Tokens that can combine into another content
+    // has to be ordered so that special cases come before general ones
+    // before this is used, strings have to be found and made into seperate tokens
+    public static (TokenGroup[] formular, TokenGroup result)[] tokenGroupFormulars = new (TokenGroup[] formular, TokenGroup result)[]{
+	// words
+	(new TokenGroup[] {TokenGroup.word, TokenGroup.letter}, TokenGroup.word),		// words can be extended by letters
+	(new TokenGroup[] {TokenGroup.word, TokenGroup.digit}, TokenGroup.word),		// words can be extended by digits
+	(new TokenGroup[] {TokenGroup.word, TokenGroup.underscore}, TokenGroup.word),		// words can be extended by underscores
+	(new TokenGroup[] {TokenGroup.letter}, TokenGroup.word),				// letters are words
+	(new TokenGroup[] {TokenGroup.underscore}, TokenGroup.word),				// underscores are words
+	// numbers
+	(new TokenGroup[] {TokenGroup.number, TokenGroup.digit}, TokenGroup.number),		// numbers can be extended by digits
+	(new TokenGroup[] {TokenGroup.number, TokenGroup.period}, TokenGroup.number),		// numbers can be extended by periods
+	(new TokenGroup[] {TokenGroup.number, TokenGroup.underscore}, TokenGroup.number),	// numbers can be extended by underscores
+	(new TokenGroup[] {TokenGroup.digit}, TokenGroup.number),				// digits are numbers
+	// assume unsplittable others
+	(new TokenGroup[] {TokenGroup.other, TokenGroup.other}, TokenGroup.other),		// others can be extended by others
+    };
 }
 
 public class Program{
@@ -129,7 +164,10 @@ _generate_donut:
 		outp += '\n';
 		// retry with bigger donut on donutTemplate being too small
 		if(currentRow >= donutTemplate.Length){
-		    totalCharCount += 100;
+		    // increase totalCharCount by amount of unmapped characters (+ 1 to make bugs less likely)
+		    int unmappedCharacterAmount = 1;
+		    for(int i = currentToken; i < tokens.Count; i++) unmappedCharacterAmount += tokens[i].content.Length;
+		    totalCharCount += unmappedCharacterAmount;
 		    if(printDebug) Console.WriteLine("Generated donut was too small for mapping, restarting");
 		    goto _generate_donut;
 		}
@@ -193,12 +231,13 @@ _generate_donut:
     }
     private static string[] GenerateDonut(){
 	int c;
+	float a = 0;
 	string[] outp;
 
 	do{
 	    // draw donut
 	    c = 0;
-	    int outsideR = (int)(Math.Sqrt((2 * totalCharCount) / (0.8775 * Math.PI))) + 1,
+	    int outsideR = (int)(Math.Sqrt((2 * totalCharCount) / (0.8775 * Math.PI) + a)) + 1,
 		insideR  = (int)(outsideR * 0.35),
 		center  = outsideR,
 		centery = outsideR / 2;
@@ -211,10 +250,9 @@ _generate_donut:
 		    c++;
 		}
 	    }
-	    totalCharCount += 50;
+	    a += 0.5f; // increase additional size in case generated donut has less characters than totalCharCount
 	} while(c < totalCharCount); // make sure enough characters exist
 
-	totalCharCount -= 50;
 	return outp;
     }
     private static int CountContinuousDots(string str, int startIndex){
@@ -284,20 +322,6 @@ public struct Token{
 	content = _content;
     }
 
-    // all strings which match a specific primitive group
-    // has to be in same order as PrimitiveGroup enum and in order of first to be checked to last
-    // if nothing matches TokenGroup.Other is given
-    public static string[][] primitiveGroupMatches = new string[][]{
-	new string[] {" ", "\t", "\n"},
-	new string[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"},
-	new string[] {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"},
-	new string[] {"."},
-	new string[] {";", ","},
-	new string[] {"(", ")", "[", "]", "{", "}"},
-	new string[] {"'''", "\"", "'", "`"},
-	new string[] {"\\"},
-	new string[] {"_"},
-    };
     // finds first Primitive in str and removes is from str
     public static Token FindFirstPrimitive(ref string str){
 	// setup parameters for no matches
@@ -305,12 +329,12 @@ public struct Token{
 	string c = str[0].ToString();;
 
 	// find matching PrimitiveGroup
-	for(int i = 0; i < primitiveGroupMatches.Length; i++){
-	    for(int j = 0; j < primitiveGroupMatches[i].Length; j++){
+	for(int i = 0; i < Config.primitiveGroupMatches.Length; i++){
+	    for(int j = 0; j < Config.primitiveGroupMatches[i].Length; j++){
 		// if matches, set parameters and return
-		if(str.StartsWith(primitiveGroupMatches[i][j])){
+		if(str.StartsWith(Config.primitiveGroupMatches[i][j])){
 		    pg = (TokenGroup)i;
-		    c = primitiveGroupMatches[i][j];
+		    c = Config.primitiveGroupMatches[i][j];
 		    goto _find_first_primitive_return;
 		}
 	    }
@@ -328,24 +352,6 @@ _find_first_primitive_return:
 	return outp;
     }
 
-    // all combinations of Tokens that can combine into another content
-    // has to be ordered so that special cases come before general ones
-    // before this is used, strings have to be found and made into seperate tokens
-    public static (TokenGroup[] formular, TokenGroup result)[] tokenGroupFormulars = new (TokenGroup[] formular, TokenGroup result)[]{
-	// words
-	(new TokenGroup[] {TokenGroup.word, TokenGroup.letter}, TokenGroup.word),		// words can be extended by letters
-	(new TokenGroup[] {TokenGroup.word, TokenGroup.digit}, TokenGroup.word),		// words can be extended by digits
-	(new TokenGroup[] {TokenGroup.word, TokenGroup.underscore}, TokenGroup.word),		// words can be extended by underscores
-	(new TokenGroup[] {TokenGroup.letter}, TokenGroup.word),				// letters are words
-	(new TokenGroup[] {TokenGroup.underscore}, TokenGroup.word),				// underscores are words
-	// numbers
-	(new TokenGroup[] {TokenGroup.number, TokenGroup.digit}, TokenGroup.number),		// numbers can be extended by digits
-	(new TokenGroup[] {TokenGroup.number, TokenGroup.period}, TokenGroup.number),		// numbers can be extended by periods
-	(new TokenGroup[] {TokenGroup.number, TokenGroup.underscore}, TokenGroup.number),	// numbers can be extended by underscores
-	(new TokenGroup[] {TokenGroup.digit}, TokenGroup.number),				// digits are numbers
-	// assume unsplittable others
-	(new TokenGroup[] {TokenGroup.other, TokenGroup.other}, TokenGroup.other),		// others can be extended by others
-    };
     // parses all strings in tokens and switches them with a string_ token
     // returns amount of strings found
     public static int ParseStrings(ref List<Token> tokens){
@@ -376,9 +382,9 @@ _find_first_primitive_return:
 	(int index, int formular) firstFoundFormular = FindFirstFormularIndex(tokens);
 	while(firstFoundFormular.index != -1){
 	    string c = "";
-	    for(int i = 0; i < tokenGroupFormulars[firstFoundFormular.formular].formular.Length; i++) c += tokens[i + firstFoundFormular.index].content;
-	    Token newToken = new Token(tokenGroupFormulars[firstFoundFormular.formular].result, c);
-	    tokens.RemoveRange(firstFoundFormular.index, tokenGroupFormulars[firstFoundFormular.formular].formular.Length);
+	    for(int i = 0; i < Config.tokenGroupFormulars[firstFoundFormular.formular].formular.Length; i++) c += tokens[i + firstFoundFormular.index].content;
+	    Token newToken = new Token(Config.tokenGroupFormulars[firstFoundFormular.formular].result, c);
+	    tokens.RemoveRange(firstFoundFormular.index, Config.tokenGroupFormulars[firstFoundFormular.formular].formular.Length);
 	    tokens.Insert(firstFoundFormular.index, newToken);
 	    firstFoundFormular = FindFirstFormularIndex(tokens);
 	}
@@ -386,11 +392,11 @@ _find_first_primitive_return:
     }
     private static (int index, int formular) FindFirstFormularIndex(List<Token> tokens){
 	for(int i = 0; i < tokens.Count; i++){
-	    for(int j = 0; j < tokenGroupFormulars.Length; j++){
-		if(i + tokenGroupFormulars[j].formular.Length >= tokens.Count) continue;
+	    for(int j = 0; j < Config.tokenGroupFormulars.Length; j++){
+		if(i + Config.tokenGroupFormulars[j].formular.Length >= tokens.Count) continue;
 		bool isMatch = true;
-		for(int k = 0; k < tokenGroupFormulars[j].formular.Length; k++){
-		    if(tokens[i + k].tokenGroup != tokenGroupFormulars[j].formular[k]){ isMatch = false; break; }
+		for(int k = 0; k < Config.tokenGroupFormulars[j].formular.Length; k++){
+		    if(tokens[i + k].tokenGroup != Config.tokenGroupFormulars[j].formular[k]){ isMatch = false; break; }
 		}
 		if(isMatch) return (i, j);
 	    }
