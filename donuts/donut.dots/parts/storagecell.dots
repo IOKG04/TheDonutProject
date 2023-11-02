@@ -1,0 +1,15 @@
+|          |      .      |            |
+|          |      v---\  |            |
+|          *-~-*-->-~-*+-v            |
+*------{!}-+-/ \-#1-^    |            |
+*-#0000-/  |        \-0#-+-~----------*
+|          |             | \-{!}------*
+|          |             |    \-0000#-*
+cwID       cwV           crV          crID
+
+cwID: ID of cell to write to
+cwV:  Value to write to cell
+crId: ID of cell to read from
+crV:  Value read from cell
+Every cell is initialized with a 0
+the `#0000` and `0000#` have to be adjusted to the cells ID
