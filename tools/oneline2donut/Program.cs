@@ -7,8 +7,8 @@ using System.Linq;
 
 w = working on
 r = reworking
-c = coded
-x = checked / done
+c = coded / testing
+x = tested / done
 
 [x] Parse
  [x] Convert to primitives
@@ -22,28 +22,38 @@ x = checked / done
  [ ] Configurations
   [ ] Modular group and formular system
   [ ] (Usable) configuration file format
- [x] Output file (_o, _o!)
+ [x] Output file (_o)
  [x] More Logs (_l)
- [ ] Even more logs
+ [ ] Even more logs (_l!)
  [x] Disable standard output (_s)
  [x] Disable questions (_y)
- [ ] Help message
+ [x] Help message (_h)
+ [ ] Skip lines (dont map code onto first n lines of donut to leave space for stuff)
 [ ] Add error messages where applicable
 
 Errors marked with `(I)` are internal. Please open an issue and describe what exactly you did to cause the error.
-
-Arguments:
- `_o [file]` `_out [file]` `_output [file]`	Saves donut to [file]
- `_o! [file]` `_out! [file]` `_output! [file]`	Saves donut to [file], doesnt ask for permission to overwrite
- `_y` `_yes` `_!`				Automatically answeres yes to any question
- `_s` `_silent`					Doesnt print donut to standard output
- `_l` `_loud`					Prints extra information
-
-`_` is used for flags instead of `-`, so there are no conflics with the dotnet cli
-
 */
 
 namespace oneline2donut;
+
+public static class Config{
+    public static string helpMessage = """
+	The "donutifier" automatically maps code onto a donut.
+
+	Usage:
+	 dotnet run [file_in] [options]				Donutifies [file_in] and prints it to the screen. This behavior may be altered by [options].
+	
+	Options:
+	 _o [file_out] _out [file_out] _output [file_out]	Saves the generated donut to [file_out].
+	 _s _silent						The generated donut isnt printed to the screen.
+	 _l _loud						Prints extra/debug information.
+	 _y _yes _!						Automatically answered Yes to any questions.
+	 _h _help						Prints a help message, then exits.
+	
+	All options start with _ instead of - as to not run into problems with dotnet.
+	If a flag is used multiple times, only the first instance will effect the result.
+	""";
+}
 
 public class Program{
     public static List<Token>	tokens;
@@ -57,8 +67,14 @@ public class Program{
     public static int Main(string[] args){
 	// error on not enough arguments
 	if(args.Length < 1){
-	    Console.WriteLine("Error 4: Not enough arguments");
+	    Console.WriteLine("Error 4: Not enough arguments\n");
+	    Console.WriteLine(Config.helpMessage);
 	    throw new Exception("Error 4: Not enough arguments");
+	}
+	// help message
+	if(Array.IndexOf(args, "_h") != -1 || Array.IndexOf(args, "_help") != -1){
+	    Console.WriteLine(Config.helpMessage);
+	    return 0;
 	}
 	// error on nonexistent input file
 	if(!File.Exists(args[0])){
@@ -234,15 +250,6 @@ _generate_donut:
 	    	Console.WriteLine("Exit 1: Output file exists and should not be overwritten");
 	    	return 1;
 	        }
-	    }
-	    outpFile = args[flagIndex + 1];
-	}
-	// `_o! [file]` flag
-	if((flagIndex = Array.IndexOf(args, "_o!")) != -1 || (flagIndex = Array.IndexOf(args, "_out!")) != -1 || (flagIndex = Array.IndexOf(args, "_output!")) != -1){
-	    // error on nonexistent [file]
-	    if(args.Length <= flagIndex + 1){
-	        Console.WriteLine("Error 6: No file after `_o` flag");
-	        throw new Exception("Error 6: No file after `_o` flag");
 	    }
 	    outpFile = args[flagIndex + 1];
 	}
