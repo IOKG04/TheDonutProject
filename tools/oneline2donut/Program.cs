@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 
 /*
+TODO: Fix any mistakes made on last commit (cause it was made in codespace, not ur pc)
+
 w = working on
 r = reworking
 c = coded / testing
@@ -28,8 +30,8 @@ x = tested / done
  [x] Disable questions (_y)
  [x] Help message (_h)
  [ ] Skip lines (dont map code onto first n lines of donut to leave space for stuff)
- [c] Print donut size information (_i)
- [ ] Specify specific donut size
+ [x] Print donut size information (_i)
+ [x] Specify specific donut size (_d)
 [ ] Add error messages where applicable
 
 Errors marked with `(I)` are internal. Please open an issue and describe what exactly you did to cause the error.
@@ -46,10 +48,11 @@ public static class Config{
 	 dotnet run [file_in] [options]				Donutifies [file_in] and prints it to the screen. This behavior may be altered by [options].
 	
 	Options:
-	 _o [file_out] _out [file_out] _output [file_out]	Saves the generated donut to [file_out].
+	 _o _out _output [file_out]		Saves the generated donut to [file_out].
 	 _s _silent						The generated donut isnt printed to the screen.
 	 _l _loud						Prints extra/debug information.
 	 _i _di _info _donutinfo				Appends dimensions of the generated donut to the donut.
+	 _d _dimensions [outer_radius] [inner_radius]	Sets the dimensions of the donut. Exits if specified dimensions are too small.
 	 _y _yes _!						Automatically answered Yes to any questions.
 	 _h _help						Prints a help message, then exits.
 	
@@ -91,7 +94,7 @@ public static class Config{
     };
 
     public static int donutIR, donutOR, donutCC;
-    public static bool printDonut, printDebug, printDonutInfo;
+    public static bool printDonut, printDebug, printDonutInfo, specificDonutDimensions;
 }
 
 public class Program{
@@ -167,6 +170,11 @@ _generate_donut:
 		outp += '\n';
 		// retry with bigger donut on donutTemplate being too small
 		if(currentRow >= donutTemplate.Length){
+			// error on specific dimensions too small
+			if(Config.specificDonutDimensions){
+				Console.WriteLine("Error 9: Specified donut dimensions are too small");
+				throw new Exception("Error 9: Specified donut dimensions are too small");
+			}
 		    // increase totalCharCount by amount of unmapped characters (+ 1 to make bugs less likely)
 		    int unmappedCharacterAmount = 1;
 		    for(int i = currentToken; i < tokens.Count; i++) unmappedCharacterAmount += tokens[i].content.Length;
@@ -244,9 +252,16 @@ _generate_donut:
 	do{
 	    // draw donut
 	    c = 0;
-	    int outsideR = (int)(Math.Sqrt((2 * totalCharCount) / (0.8775 * Math.PI) + a)) + 1,
-		insideR  = (int)(outsideR * 0.35),
-		center  = outsideR,
+		int outsideR, insideR;
+		if(Config.specificDonutDimensions){
+			outsideR = Config.donutOR;
+			insideR = Config.donutIR;
+		}
+		else{
+		outsideR = (int)(Math.Sqrt((2 * totalCharCount) / (0.8775 * Math.PI) + a)) + 1;
+		insideR  = (int)(outsideR * 0.35);
+		}
+		int center  = outsideR,
 		centery = outsideR / 2;
 	    outp = new string[outsideR];
 	    for(int y = 0; y < outsideR; y++){
@@ -282,6 +297,7 @@ _generate_donut:
 	Config.printDonut = true;
 	Config.printDebug = false;
 	Config.printDonutInfo = false;
+	Config.specificDonutDimensions = false;
 	bool autoYes = false;
 
 	// `_y` flag
@@ -291,12 +307,12 @@ _generate_donut:
 	if((flagIndex = Array.IndexOf(args, "_o")) != -1 || (flagIndex = Array.IndexOf(args, "_out")) != -1 || (flagIndex = Array.IndexOf(args, "_output")) != -1){
 	    // error on nonexistent [file]
 	    if(args.Length <= flagIndex + 1){
-	        Console.WriteLine("Error 6: No file after `_o` flag");
-	        throw new Exception("Error 6: No file after `_o` flag");
+	        Console.WriteLine("Error 6: No file after _o flag");
+	        throw new Exception("Error 6: No file after _o flag");
 	    }
 	    // test if [file] exists
 	    if(!autoYes && File.Exists(args[flagIndex + 1])){
-	        Console.WriteLine("Output file `" + args[flagIndex + 1] + "` already exists\nOverwrite? Y/n");
+	        Console.WriteLine(args[flagIndex + 1] + " already exists\nOverwrite? Y/n");
 	        string inp = Console.ReadLine().ToLower();
 	        if(inp == "n" || inp == "no" || inp == "0"){
 	    	Console.WriteLine("Exit 1: Output file exists and should not be overwritten");
@@ -321,6 +337,23 @@ _generate_donut:
 
 	// `_i` flag
 	if(Array.IndexOf(args, "_i") != -1 || Array.IndexOf(args, "_info") != -1 || Array.IndexOf(args, "_di") != -1 || Array.IndexOf(args, "_donutinfo") != -1) Config.printDonutInfo = true;
+
+	// `_d` flag
+	if((flagIndex = Array.IndexOf(args, "_d")) != -1 || (flagIndex = Array.IndexOf(args, "_dimensions")) != -1){
+		// error on too few arguments
+		if(args.Length <= flagIndex + 2){
+			Console.WriteLine("Error 7: No dimensions after _d flag");
+			throw new Exception("Error 7: No dimensions after _d flag");
+		}
+		Config.specificDonutDimensions = true;
+		Config.donutOR = int.Parse(args[flagIndex + 1]);
+		Config.donutIR = int.Parse(args[flagIndex + 2]);
+		// error on nonexistent radii
+		if(Config.donutOR < 1 || Config.donutIR < 0){
+			Console.WriteLine("Error 8: Radii too small");
+			throw new Exception("Error 8: Radii too small");
+		}
+	}
 
 	return 0;
     }
