@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 /*
-TODO: Fix any mistakes made on last commit (cause it was made in codespace, not ur pc)
-
 w = working on
 r = reworking
 c = coded / testing
@@ -48,11 +46,11 @@ public static class Config{
 	 dotnet run [file_in] [options]				Donutifies [file_in] and prints it to the screen. This behavior may be altered by [options].
 	
 	Options:
-	 _o _out _output [file_out]		Saves the generated donut to [file_out].
+	 _o _out _output [file_out]				Saves the generated donut to [file_out].
 	 _s _silent						The generated donut isnt printed to the screen.
 	 _l _loud						Prints extra/debug information.
 	 _i _di _info _donutinfo				Appends dimensions of the generated donut to the donut.
-	 _d _dimensions [outer_radius] [inner_radius]	Sets the dimensions of the donut. Exits if specified dimensions are too small.
+	 _d _dimensions [outer_radius] [inner_radius]		Sets the dimensions of the donut. Exits if specified dimensions are too small.
 	 _y _yes _!						Automatically answered Yes to any questions.
 	 _h _help						Prints a help message, then exits.
 	
@@ -170,11 +168,11 @@ _generate_donut:
 		outp += '\n';
 		// retry with bigger donut on donutTemplate being too small
 		if(currentRow >= donutTemplate.Length){
-			// error on specific dimensions too small
-			if(Config.specificDonutDimensions){
-				Console.WriteLine("Error 9: Specified donut dimensions are too small");
-				throw new Exception("Error 9: Specified donut dimensions are too small");
-			}
+		    // error on specific dimensions too small
+		    if(Config.specificDonutDimensions){
+		    	Console.WriteLine("Error 9: Specified donut dimensions are too small");
+		    	throw new Exception("Error 9: Specified donut dimensions are too small");
+		    }
 		    // increase totalCharCount by amount of unmapped characters (+ 1 to make bugs less likely)
 		    int unmappedCharacterAmount = 1;
 		    for(int i = currentToken; i < tokens.Count; i++) unmappedCharacterAmount += tokens[i].content.Length;
@@ -254,12 +252,12 @@ _generate_donut:
 	    c = 0;
 		int outsideR, insideR;
 		if(Config.specificDonutDimensions){
-			outsideR = Config.donutOR;
-			insideR = Config.donutIR;
+		    outsideR = Config.donutOR;
+		    insideR = Config.donutIR;
 		}
 		else{
-		outsideR = (int)(Math.Sqrt((2 * totalCharCount) / (0.8775 * Math.PI) + a)) + 1;
-		insideR  = (int)(outsideR * 0.35);
+		    outsideR = (int)(Math.Sqrt((2 * totalCharCount) / (0.8775 * Math.PI) + a)) + 1;
+		    insideR  = (int)(outsideR * 0.35);
 		}
 		int center  = outsideR,
 		centery = outsideR / 2;
@@ -340,19 +338,19 @@ _generate_donut:
 
 	// `_d` flag
 	if((flagIndex = Array.IndexOf(args, "_d")) != -1 || (flagIndex = Array.IndexOf(args, "_dimensions")) != -1){
-		// error on too few arguments
-		if(args.Length <= flagIndex + 2){
-			Console.WriteLine("Error 7: No dimensions after _d flag");
-			throw new Exception("Error 7: No dimensions after _d flag");
-		}
-		Config.specificDonutDimensions = true;
-		Config.donutOR = int.Parse(args[flagIndex + 1]);
-		Config.donutIR = int.Parse(args[flagIndex + 2]);
-		// error on nonexistent radii
-		if(Config.donutOR < 1 || Config.donutIR < 0){
-			Console.WriteLine("Error 8: Radii too small");
-			throw new Exception("Error 8: Radii too small");
-		}
+	    // error on too few arguments
+	    if(args.Length <= flagIndex + 2){
+	    	Console.WriteLine("Error 7: No dimensions after _d flag");
+	    	throw new Exception("Error 7: No dimensions after _d flag");
+	    }
+	    Config.specificDonutDimensions = true;
+	    Config.donutOR = int.Parse(args[flagIndex + 1]);
+	    Config.donutIR = int.Parse(args[flagIndex + 2]);
+	    // error on nonexistent radii
+	    if(Config.donutOR < 1 || Config.donutIR < 0){
+	    	Console.WriteLine("Error 8: Radii too small");
+	    	throw new Exception("Error 8: Radii too small");
+	    }
 	}
 
 	return 0;
