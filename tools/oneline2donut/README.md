@@ -15,6 +15,20 @@ The result is printed to standard output.
 
 Please note that removing any unecessary linebreaks, spaces and tabs will greatly improve the result, though it will still not be perfect.
 
+### Configurations
+
+Configuration files can be used to change the behavior of the "donutifier" so it works with not c like programming languages.
+
+#### Sections
+
+A "donutifier" configuration file is is comprised of multiple sections, each having an effect on one part of the "donutifying" process:
+* Primitive group matches
+* Token formulars
+
+<!--
+TODO: ADD IN MORE DOCUMENTATION AND AN ACTUAL SPECIFICATION
+-->
+
 ### Limitations
 
 The default configuration coded into the "donutifier" is made for c like programming languages, and probably wont work on other kinds of programming languages.  

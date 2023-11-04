@@ -18,7 +18,7 @@ x = tested / done
  [x] Generate donut template
  [x] Map input onto template without splitting groups
 [ ] Add arguments
- [ ] Configurations
+ [w] Configurations
   [ ] Modular group and formular system
   [ ] (Usable) configuration file format
  [x] Output file (_o)
@@ -60,7 +60,7 @@ public static class Config{
 
     // all strings which match a specific primitive group
     // has to be in same order as PrimitiveGroup enum and in order of first to be checked to last
-    // if nothing matches TokenGroup.Other is given
+    // if nothing matches 255 is given
     public static string[][] primitiveGroupMatches = new string[][]{
 	new string[] {" ", "\t", "\n"},
 	new string[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"},
@@ -75,20 +75,20 @@ public static class Config{
     // all combinations of Tokens that can combine into another content
     // has to be ordered so that special cases come before general ones
     // before this is used, strings have to be found and made into seperate tokens
-    public static (TokenGroup[] formular, TokenGroup result)[] tokenGroupFormulars = new (TokenGroup[] formular, TokenGroup result)[]{
+    public static (byte[] formular, byte result)[] tokenGroupFormulars = new (byte[] formular, byte result)[]{
 	// words
-	(new TokenGroup[] {TokenGroup.word, TokenGroup.letter}, TokenGroup.word),		// words can be extended by letters
-	(new TokenGroup[] {TokenGroup.word, TokenGroup.digit}, TokenGroup.word),		// words can be extended by digits
-	(new TokenGroup[] {TokenGroup.word, TokenGroup.underscore}, TokenGroup.word),		// words can be extended by underscores
-	(new TokenGroup[] {TokenGroup.letter}, TokenGroup.word),				// letters are words
-	(new TokenGroup[] {TokenGroup.underscore}, TokenGroup.word),				// underscores are words
+	(new byte[] {130, 1}, 130),		// words can be extended by letters
+	(new byte[] {130, 2}, 130),		// words can be extended by digits
+	(new byte[] {130, 8}, 130),		// words can be extended by underscores
+	(new byte[] {1}, 130),				// letters are words
+	(new byte[] {8}, 130),				// underscores are words
 	// numbers
-	(new TokenGroup[] {TokenGroup.number, TokenGroup.digit}, TokenGroup.number),		// numbers can be extended by digits
-	(new TokenGroup[] {TokenGroup.number, TokenGroup.period}, TokenGroup.number),		// numbers can be extended by periods
-	(new TokenGroup[] {TokenGroup.number, TokenGroup.underscore}, TokenGroup.number),	// numbers can be extended by underscores
-	(new TokenGroup[] {TokenGroup.digit}, TokenGroup.number),				// digits are numbers
+	(new byte[] {129, 2}, 129),		// numbers can be extended by digits
+	(new byte[] {129, 3}, 129),		// numbers can be extended by periods
+	(new byte[] {129, 8}, 129),	// numbers can be extended by underscores
+	(new byte[] {2}, 129),				// digits are numbers
 	// assume unsplittable others
-	(new TokenGroup[] {TokenGroup.other, TokenGroup.other}, TokenGroup.other),		// others can be extended by others
+	(new byte[] {255, 255}, 255),		// others can be extended by others
     };
 
     public static int donutIR, donutOR, donutCC, minLine;
@@ -382,13 +382,13 @@ _generate_donut:
 
 // tokens are combinations of Primitives that have a specific function in a programming language, like a function name, a discriminator, etc.
 public struct Token{
-    public TokenGroup	tokenGroup;
+    public byte	tokenGroup;
     public string	content;
     public string ToString(bool showGroup = false){
 	string outp = showGroup ? "{ \"group\": \"" + tokenGroup.ToString() + "\", \"content\": \"" + content + "\" }" : content;
 	return outp;
     }
-    public Token(TokenGroup _tokenGroup, string _content){
+    public Token(byte _tokenGroup, string _content){
 	tokenGroup = _tokenGroup;
 	content = _content;
     }
@@ -396,7 +396,7 @@ public struct Token{
     // finds first Primitive in str and removes is from str
     public static Token FindFirstPrimitive(ref string str){
 	// setup parameters for no matches
-	TokenGroup pg = TokenGroup.other;
+	byte pg = 255;
 	string c = str[0].ToString();;
 
 	// find matching PrimitiveGroup
@@ -404,7 +404,7 @@ public struct Token{
 	    for(int j = 0; j < Config.primitiveGroupMatches[i].Length; j++){
 		// if matches, set parameters and return
 		if(str.StartsWith(Config.primitiveGroupMatches[i][j])){
-		    pg = (TokenGroup)i;
+		    pg = (byte)i;
 		    c = Config.primitiveGroupMatches[i][j];
 		    goto _find_first_primitive_return;
 		}
@@ -427,17 +427,17 @@ _find_first_primitive_return:
     // returns amount of strings found
     public static int ParseStrings(ref List<Token> tokens){
 	int stringsFound = 0;
-	while(tokens.Any(t => t.tokenGroup == TokenGroup.stringStarters)){
-	    int starti = tokens.FindIndex(t => t.tokenGroup == TokenGroup.stringStarters);
+	while(tokens.Any(t => t.tokenGroup == 6)){
+	    int starti = tokens.FindIndex(t => t.tokenGroup == 6);
 	    Token startt = tokens[starti];
 	    int endi = starti;
 	    do{
-		endi = tokens.FindIndex(endi + 1, t => t.tokenGroup == TokenGroup.stringStarters && t.content == startt.content);
+		endi = tokens.FindIndex(endi + 1, t => t.tokenGroup == 6 && t.content == startt.content);
 	    }while(IsEscaped(tokens, endi));
 	    stringsFound++;
 	    string c = "";
 	    for(int i = starti; i <= endi; i++) c += tokens[i].content;
-	    Token str = new Token(TokenGroup.string_, c);
+	    Token str = new Token(128, c);
 	    tokens.RemoveRange(starti, endi - starti + 1);
 	    tokens.Insert(starti, str);
 	}
@@ -445,7 +445,7 @@ _find_first_primitive_return:
     }
     private static bool IsEscaped(List<Token> tokens, int i){
 	bool outp = false;
-	while(--i > 0 && tokens[i].tokenGroup == TokenGroup.escape) outp = !outp;
+	while(--i > 0 && tokens[i].tokenGroup == 7) outp = !outp;
 	return outp;
     }
     public static int ApplyFormulars(ref List<Token> tokens){
@@ -474,22 +474,4 @@ _find_first_primitive_return:
 	}
 	return (-1, -1);
     }
-}
-// list of all groups a Token can be a part of
-// groups with a value below 128 are considered primitive
-public enum TokenGroup : byte{
-    space		= 0,   // " ", "\t", "\n"
-    letter		= 1,   // alphabetic characters
-    digit		= 2,   // numeric characters
-    period		= 3,   // "."
-    discriminator	= 4,   // ";", ","
-    brackets		= 5,   // normal, square and curly brackets
-    stringStarters	= 6,   // "'''", "\"", "'", other common string starters
-    escape		= 7,   // "\\", other common escape characters
-    underscore		= 8,   // "_"
-    string_		= 128, // strings seperated by stringStarters				(stringStarters + [whatever]? + stringStarters)
-			       // (with underscore at end so it isnt the same as the keyword)
-    number		= 129, // integer or floating point number				(digits + period? + digits? | underscore)
-    word		= 130, // keyword or variable/function name				(letters + digits? + underscore?)
-    other		= 255, // characters not assigned to another group
 }
