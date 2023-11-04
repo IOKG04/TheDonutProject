@@ -23,7 +23,6 @@ x = tested / done
   [ ] (Usable) configuration file format
  [x] Output file (_o)
  [x] More Logs (_l)
- [ ] Even more logs (_l!)
  [x] Disable standard output (_s)
  [x] Disable questions (_y)
  [x] Help message (_h)
