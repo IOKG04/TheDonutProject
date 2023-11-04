@@ -27,7 +27,7 @@ x = tested / done
  [x] Disable standard output (_s)
  [x] Disable questions (_y)
  [x] Help message (_h)
- [ ] Skip lines (dont map code onto first n lines of donut to leave space for stuff)
+ [x] Skip lines (dont map code onto first n lines of donut to leave space for stuff) (_k)
  [x] Print donut size information (_i)
  [x] Specify specific donut size (_d)
 [ ] Add error messages where applicable
@@ -51,6 +51,7 @@ public static class Config{
 	 _l _loud						Prints extra/debug information.
 	 _i _di _info _donutinfo				Appends dimensions of the generated donut to the donut.
 	 _d _dimensions [outer_radius] [inner_radius]		Sets the dimensions of the donut. Exits if specified dimensions are too small.
+	 _k _skip _kl _skiplines [n]				Doesnt map code onto the first [n] lines of the generated donut.
 	 _y _yes _!						Automatically answered Yes to any questions.
 	 _h _help						Prints a help message, then exits.
 	
@@ -91,7 +92,7 @@ public static class Config{
 	(new TokenGroup[] {TokenGroup.other, TokenGroup.other}, TokenGroup.other),		// others can be extended by others
     };
 
-    public static int donutIR, donutOR, donutCC;
+    public static int donutIR, donutOR, donutCC, minLine;
     public static bool printDonut, printDebug, printDonutInfo, specificDonutDimensions;
 }
 
@@ -161,6 +162,13 @@ _generate_donut:
 	int currentChar = 0, currentRow = 0, currentToken = 0, startToken, dotsLeft;
 	outp = "";
 	while(currentToken < tokens.Count){
+	    // skip lines
+	    if(currentRow < Config.minLine){
+		outp += donutTemplate[currentRow];
+		outp += '\n';
+		currentRow++;
+		continue;
+	    }
 	    // test if linebreak is needed
 	    if(currentChar >= donutTemplate[currentRow].Length){
 		currentRow++;
@@ -296,6 +304,7 @@ _generate_donut:
 	Config.printDebug = false;
 	Config.printDonutInfo = false;
 	Config.specificDonutDimensions = false;
+	Config.minLine = 0;
 	bool autoYes = false;
 
 	// `_y` flag
@@ -350,6 +359,21 @@ _generate_donut:
 	    if(Config.donutOR < 1 || Config.donutIR < 0){
 	    	Console.WriteLine("Error 8: Radii too small");
 	    	throw new Exception("Error 8: Radii too small");
+	    }
+	}
+
+	// `_k` flag
+	if((flagIndex = Array.IndexOf(args, "_k")) != -1 || (flagIndex = Array.IndexOf(args, "_skip")) != -1 || (flagIndex = Array.IndexOf(args, "_kl")) != -1 || (flagIndex = Array.IndexOf(args, "_skiplines")) != -1){
+	    // error on too few arguments
+	    if(args.Length <= flagIndex + 1){
+		Console.WriteLine("Error 10: No value after _k flag");
+		throw new Exception("Error 10: No value after _k flag");
+	    }
+	    Config.minLine = int.Parse(args[flagIndex + 1]);
+	    // error on negative minLine
+	    if(Config.minLine < 0){
+		Console.WriteLine("Error 11: Negative minimum lines");
+		throw new Exception("Error 11: Negative minimum lines");
 	    }
 	}
 
